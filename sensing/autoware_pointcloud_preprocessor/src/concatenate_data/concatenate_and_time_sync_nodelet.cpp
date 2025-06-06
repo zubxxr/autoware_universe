@@ -437,9 +437,10 @@ void PointCloudConcatenateDataSynchronizerComponent::publish()
         auto output = std::make_unique<sensor_msgs::msg::PointCloud2>(*e.second);
         transformed_raw_pc_publisher_map_[e.first]->publish(std::move(output));
       } else {
-        RCLCPP_WARN(
-          this->get_logger(), "transformed_raw_points[%s] is nullptr, skipping pointcloud publish.",
-          e.first.c_str());
+        (void)e.first.c_str();
+        //RCLCPP_WARN(
+          //this->get_logger(), "transformed_raw_points[%s] is nullptr, skipping pointcloud publish.",
+         // e.first.c_str());
       }
     }
   }
