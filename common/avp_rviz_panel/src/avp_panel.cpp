@@ -1,90 +1,130 @@
+// avp_panel.cpp
 #include "avp_panel.hpp"
-
 #include <pluginlib/class_list_macros.hpp>
 #include <QTimer>
-#include <QMetaObject>
-#include <thread>
+
+using std::placeholders::_1;
 
 namespace avp_rviz_panel
 {
-
-AVPPanel::AVPPanel(QWidget *parent)
-: rviz_common::Panel(parent)
+AVPPanel::AVPPanel(QWidget *parent) : rviz_common::Panel(parent)
 {
-  // Initialize ROS node
-  ros_node_ = std::make_shared<rclcpp::Node>("avp_panel_node");
+  setupUI();
+  createROSInterfaces();
+}
 
-  // Publisher to send AVP start command
-  publisher_ = ros_node_->create_publisher<std_msgs::msg::String>("/avp/command", 10);
+void AVPPanel::onInitialize() {}
 
-  // Subscriber for AVP status updates
-  status_subscriber_ = ros_node_->create_subscription<std_msgs::msg::String>(
+void AVPPanel::setupUI()
+{
+  auto *main_layout = new QVBoxLayout;
+
+  available_spots_label_ = new QLabel("Available Spots: N/A");
+  reserved_spots_label_ = new QLabel("Reserved Spots: N/A");
+  queue_label_ = new QLabel("Queue: N/A");
+  status_label_ = new QLabel("Status: N/A");
+
+  main_layout->addWidget(available_spots_label_);
+  main_layout->addWidget(reserved_spots_label_);
+  main_layout->addWidget(queue_label_);
+  main_layout->addWidget(status_label_);
+
+  // Buttons
+  head_to_dropoff_button_ = new QPushButton("Head to Drop-Off");
+  start_avp_button_ = new QPushButton("Start AVP");
+  retrieve_button_ = new QPushButton("Retrieve Vehicle");
+
+  // Create horizontal layout for buttons
+  auto *button_layout = new QHBoxLayout;
+  button_layout->addWidget(head_to_dropoff_button_);
+  button_layout->addWidget(start_avp_button_);
+  button_layout->addWidget(retrieve_button_);
+
+  // Add button layout to main layout
+  main_layout->addLayout(button_layout);
+
+  // Connect buttons to slots
+  connect(head_to_dropoff_button_, &QPushButton::clicked, this, &AVPPanel::onHeadToDropOffClicked);
+  connect(start_avp_button_, &QPushButton::clicked, this, &AVPPanel::onStartAVPClicked);
+  connect(retrieve_button_, &QPushButton::clicked, this, &AVPPanel::onRetrieveClicked);
+
+  setLayout(main_layout);
+}
+
+void AVPPanel::createROSInterfaces()
+{
+  node_ = rclcpp::Node::make_shared("avp_panel_node");
+  command_pub_ = node_->create_publisher<std_msgs::msg::String>("/avp/command", 10);
+
+  available_spots_sub_ = node_->create_subscription<std_msgs::msg::String>(
+    "/parking_spots/empty", 10,
+    [this](const std_msgs::msg::String::SharedPtr msg) {
+      std::string raw = msg->data;
+      std::string::size_type colon = raw.rfind(':');
+      std::string just_spots = (colon != std::string::npos) ? raw.substr(colon + 1) : raw;
+      QString text = QString::fromStdString("Available Spots: " + just_spots);
+      QMetaObject::invokeMethod(this, [this, text]() {
+        available_spots_label_->setText(text);
+      }, Qt::QueuedConnection);
+    });
+
+  reserved_spots_sub_ = node_->create_subscription<std_msgs::msg::String>(
+    "/parking_spots/reserved", 10,
+    [this](const std_msgs::msg::String::SharedPtr msg) {
+      std::string raw = msg->data;
+      std::string::size_type colon = raw.rfind(':');
+      std::string just_spots = (colon != std::string::npos) ? raw.substr(colon + 1) : raw;
+      QString text = QString::fromStdString("Reserved Spots: " + just_spots);
+      QMetaObject::invokeMethod(this, [this, text]() {
+        reserved_spots_label_->setText(text);
+      }, Qt::QueuedConnection);
+    });
+
+  queue_sub_ = node_->create_subscription<std_msgs::msg::String>(
+    "/avp/dropoff_queue", 10,
+    [this](const std_msgs::msg::String::SharedPtr msg) {
+      QString text = QString::fromStdString("Queue: " + msg->data);
+      QMetaObject::invokeMethod(this, [this, text]() {
+        queue_label_->setText(text);
+      }, Qt::QueuedConnection);
+    });
+
+  status_sub_ = node_->create_subscription<std_msgs::msg::String>(
     "/avp/status", 10,
-    [this](const std_msgs::msg::String::SharedPtr msg)
-    {
-      // Update the label safely in the Qt main thread
+    [this](const std_msgs::msg::String::SharedPtr msg) {
       QString text = QString::fromStdString("Status: " + msg->data);
-      QMetaObject::invokeMethod(
-        this,
-        [this, text]() {
-          status_label_->setText(text);
-        },
-        Qt::QueuedConnection);
+      QMetaObject::invokeMethod(this, [this, text]() {
+        status_label_->setText(text);
+      }, Qt::QueuedConnection);
     });
 
-  spots_subscriber_ = ros_node_->create_subscription<std_msgs::msg::String>(
-  "/parking_spots/empty", 10,
-  [this](const std_msgs::msg::String::SharedPtr msg)
-  {
-    std::string raw = msg->data;
-    std::string::size_type colon = raw.rfind(':');
-    std::string just_spots = (colon != std::string::npos) ? raw.substr(colon + 1) : raw;
-    QString text = QString::fromStdString("Available Spots:" + just_spots);
 
-    QMetaObject::invokeMethod(
-      this,
-      [this, text]() {
-        parking_spots_label_->setText(text);
-      },
-      Qt::QueuedConnection);
-  });
-
-
-  // Subscriber for AVP spot info
-  spot_subscriber_ = ros_node_->create_subscription<std_msgs::msg::String>(
-    "/avp/spot", 10,
-    [](const std_msgs::msg::String::SharedPtr msg)
-    {
-      RCLCPP_INFO(rclcpp::get_logger("AVPPanel"), "Received spot info: %s", msg->data.c_str());
-    });
-
-  // GUI setup
-  auto *layout = new QVBoxLayout;
-  start_button_ = new QPushButton("Start AVP");
-  status_label_ = new QLabel("Status: Idle");
-  parking_spots_label_ = new QLabel("Available Spots: N/A");
-  layout->insertWidget(0, parking_spots_label_); 
-  layout->addWidget(start_button_);
-  layout->addWidget(status_label_);
-  setLayout(layout);
-
-  connect(start_button_, &QPushButton::clicked, this, &AVPPanel::onStartButtonClicked);
-
-  // Spin the node in a separate thread
   executor_ = std::make_shared<rclcpp::executors::SingleThreadedExecutor>();
-  executor_->add_node(ros_node_);
+  executor_->add_node(node_);
   std::thread([this]() {
     executor_->spin();
   }).detach();
 }
 
-void AVPPanel::onStartButtonClicked()
+void AVPPanel::onHeadToDropOffClicked()
 {
   std_msgs::msg::String msg;
-  msg.data = "start";
-  publisher_->publish(msg);
-  // Remove this line so the label updates only through subscription:
-  // status_label_->setText("Dropping off passenger...");
+  msg.data = "head_to_dropoff";
+  command_pub_->publish(msg);
+}
+
+void AVPPanel::onStartAVPClicked()
+{
+  std_msgs::msg::String msg;
+  msg.data = "start_avp";
+  command_pub_->publish(msg);
+}
+
+void AVPPanel::onRetrieveClicked()
+{
+  std_msgs::msg::String msg;
+  msg.data = "retrieve";
+  command_pub_->publish(msg);
 }
 
 }  // namespace avp_rviz_panel
