@@ -1,13 +1,11 @@
 #pragma once
 
-#include <rviz_common/panel.hpp>
+#include <QLabel>
+#include <QPushButton>
+#include <QVBoxLayout>
 #include <rclcpp/rclcpp.hpp>
 #include <std_msgs/msg/string.hpp>
-
-#include <QPushButton>
-#include <QLabel>
-#include <QVBoxLayout>
-#include <memory>
+#include <rviz_common/panel.hpp>
 
 namespace avp_rviz_panel
 {
@@ -18,23 +16,36 @@ class AVPPanel : public rviz_common::Panel
 
 public:
   explicit AVPPanel(QWidget *parent = nullptr);
+  void onInitialize() override;
 
 protected Q_SLOTS:
-  void onStartButtonClicked();
+  void onHeadToDropOffClicked();
+  void onStartAVPClicked();
+  void onRetrieveClicked();
 
 private:
-  // ROS
-  rclcpp::Node::SharedPtr ros_node_;
-  rclcpp::Publisher<std_msgs::msg::String>::SharedPtr publisher_;
-  rclcpp::Subscription<std_msgs::msg::String>::SharedPtr status_subscriber_;
-  rclcpp::Subscription<std_msgs::msg::String>::SharedPtr spot_subscriber_;
-  rclcpp::executors::SingleThreadedExecutor::SharedPtr executor_;
-  rclcpp::Subscription<std_msgs::msg::String>::SharedPtr spots_subscriber_;
+  void setupUI();
+  void createROSInterfaces();
 
-  // GUI
-  QPushButton *start_button_;
+  // UI labels
+  QLabel *available_spots_label_;
+  QLabel *reserved_spots_label_;
+  QLabel *queue_label_;
   QLabel *status_label_;
-  QLabel *parking_spots_label_;
+
+  // UI buttons
+  QPushButton *head_to_dropoff_button_;
+  QPushButton *start_avp_button_;
+  QPushButton *retrieve_button_;
+
+  // ROS node and interfaces
+  rclcpp::Node::SharedPtr node_;
+  rclcpp::Subscription<std_msgs::msg::String>::SharedPtr available_spots_sub_;
+  rclcpp::Subscription<std_msgs::msg::String>::SharedPtr reserved_spots_sub_;
+  rclcpp::Subscription<std_msgs::msg::String>::SharedPtr queue_sub_;
+  rclcpp::Subscription<std_msgs::msg::String>::SharedPtr status_sub_;
+  rclcpp::Publisher<std_msgs::msg::String>::SharedPtr command_pub_;
+  rclcpp::executors::SingleThreadedExecutor::SharedPtr executor_;
 };
 
 }  // namespace avp_rviz_panel
