@@ -79,13 +79,22 @@ void AVPPanel::createROSInterfaces()
         reserved_spots_label_->setText(text);
       }, Qt::QueuedConnection);
     });
-
   queue_sub_ = node_->create_subscription<std_msgs::msg::String>(
     "/avp/dropoff_queue", 10,
     [this](const std_msgs::msg::String::SharedPtr msg) {
-      QString text = QString::fromStdString("Queue: " + msg->data);
+      std::string raw = msg->data;
+      std::string cleaned = raw;
+
+      // Remove known prefix if present
+      const std::string prefix = "Drop-off Queue: ";
+      std::size_t pos = raw.find(prefix);
+      if (pos != std::string::npos) {
+        cleaned = raw.substr(pos + prefix.length());
+      }
+
+      QString text = QString::fromStdString(cleaned);
       QMetaObject::invokeMethod(this, [this, text]() {
-        queue_label_->setText(text);
+        queue_label_->setText("Queue: " + text);
       }, Qt::QueuedConnection);
     });
 
