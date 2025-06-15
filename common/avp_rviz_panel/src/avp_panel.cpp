@@ -19,10 +19,10 @@ void AVPPanel::setupUI()
 {
   auto *main_layout = new QVBoxLayout;
 
-  available_spots_label_ = new QLabel("Available Spots: N/A");
-  reserved_spots_label_ = new QLabel("Reserved Spots: N/A");
-  queue_label_ = new QLabel("Queue: N/A");
-  status_label_ = new QLabel("Status: N/A");
+  available_spots_label_ = new QLabel("Available Spots: []");
+  reserved_spots_label_ = new QLabel("Reserved Spots: []");
+  queue_label_ = new QLabel("Queue: []");
+  status_label_ = new QLabel("Status: Waiting...");
 
   main_layout->addWidget(available_spots_label_);
   main_layout->addWidget(reserved_spots_label_);
