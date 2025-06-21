@@ -2,6 +2,7 @@
 #include "avp_panel.hpp"
 #include <pluginlib/class_list_macros.hpp>
 #include <QTimer>
+#include <std_msgs/msg/int32.hpp>
 
 using std::placeholders::_1;
 
@@ -17,7 +18,11 @@ void AVPPanel::onInitialize() {}
 
 void AVPPanel::setupUI()
 {
+
   auto *main_layout = new QVBoxLayout;
+
+  vehicle_count_label_ = new QLabel("Vehicles Active: ...");
+  main_layout->addWidget(vehicle_count_label_);
 
   available_spots_label_ = new QLabel("Available Spots: []");
   reserved_spots_label_ = new QLabel("Reserved Spots: []");
@@ -106,6 +111,16 @@ void AVPPanel::createROSInterfaces()
         status_label_->setText(text);
       }, Qt::QueuedConnection);
     });
+
+  vehicle_count_sub_ = node_->create_subscription<std_msgs::msg::Int32>(
+    "/vehicle_count", 10,
+    [this](const std_msgs::msg::Int32::SharedPtr msg) {
+      QString text = QString("Vehicles Active: %1").arg(msg->data);
+      QMetaObject::invokeMethod(this, [this, text]() {
+        vehicle_count_label_->setText(text);
+      }, Qt::QueuedConnection);
+    }
+  );
 
 
   executor_ = std::make_shared<rclcpp::executors::SingleThreadedExecutor>();
