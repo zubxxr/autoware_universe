@@ -6,6 +6,8 @@
 #include <rclcpp/rclcpp.hpp>
 #include <std_msgs/msg/string.hpp>
 #include <rviz_common/panel.hpp>
+#include <std_msgs/msg/int32.hpp>
+
 
 namespace avp_rviz_panel
 {
@@ -33,6 +35,8 @@ private:
   QLabel *queue_label_;
   QLabel *status_label_;
 
+  QLabel *vehicle_count_label_;
+
   // UI buttons
   QPushButton *head_to_dropoff_button_;
   QPushButton *start_avp_button_;
@@ -46,6 +50,8 @@ private:
   rclcpp::Subscription<std_msgs::msg::String>::SharedPtr status_sub_;
   rclcpp::Publisher<std_msgs::msg::String>::SharedPtr command_pub_;
   rclcpp::executors::SingleThreadedExecutor::SharedPtr executor_;
+  rclcpp::Subscription<std_msgs::msg::Int32>::SharedPtr vehicle_count_sub_;
+
 };
 
 }  // namespace avp_rviz_panel
