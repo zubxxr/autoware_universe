@@ -62,7 +62,7 @@ void AVPPanel::createROSInterfaces()
   command_pub_ = node_->create_publisher<std_msgs::msg::String>("/avp/command", 10);
 
   available_spots_sub_ = node_->create_subscription<std_msgs::msg::String>(
-    "/parking_spots/empty", 10,
+    "/avp/parking_spots", 10,
     [this](const std_msgs::msg::String::SharedPtr msg) {
       std::string raw = msg->data;
       std::string::size_type colon = raw.rfind(':');
@@ -74,7 +74,7 @@ void AVPPanel::createROSInterfaces()
     });
 
   reserved_spots_sub_ = node_->create_subscription<std_msgs::msg::String>(
-    "/parking_spots/reserved", 10,
+    "/avp/reserved_parking_spots", 10,
     [this](const std_msgs::msg::String::SharedPtr msg) {
       std::string raw = msg->data;
       std::string::size_type colon = raw.rfind(':');
@@ -85,7 +85,7 @@ void AVPPanel::createROSInterfaces()
       }, Qt::QueuedConnection);
     });
   queue_sub_ = node_->create_subscription<std_msgs::msg::String>(
-    "/avp/dropoff_queue", 10,
+    "/avp/queue", 10,
     [this](const std_msgs::msg::String::SharedPtr msg) {
       std::string raw = msg->data;
       std::string cleaned = raw;
@@ -113,7 +113,7 @@ void AVPPanel::createROSInterfaces()
     });
 
   vehicle_count_sub_ = node_->create_subscription<std_msgs::msg::Int32>(
-    "/vehicle_count", 10,
+    "/avp/vehicle_count", 10,
     [this](const std_msgs::msg::Int32::SharedPtr msg) {
       QString text = QString("Vehicles Active: %1").arg(msg->data);
       QMetaObject::invokeMethod(this, [this, text]() {
