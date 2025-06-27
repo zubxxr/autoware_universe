@@ -34,13 +34,17 @@ private:
   QLabel *reserved_spots_label_;
   QLabel *queue_label_;
   QLabel *status_label_;
-
   QLabel *vehicle_count_label_;
 
-  // UI buttons
-  QPushButton *head_to_dropoff_button_;
-  QPushButton *start_avp_button_;
+  QPushButton *dropoff_button_;
+  QPushButton *parking_button_;
   QPushButton *retrieve_button_;
+  QHBoxLayout *avp_mode_layout_;
+
+  // // UI buttons
+  // QPushButton *head_to_dropoff_button_;
+  // QPushButton *start_avp_button_;
+  // QPushButton *retrieve_button_;
 
   // ROS node and interfaces
   rclcpp::Node::SharedPtr node_;
