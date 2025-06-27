@@ -22,35 +22,59 @@ void AVPPanel::setupUI()
   auto *main_layout = new QVBoxLayout;
 
   vehicle_count_label_ = new QLabel("Vehicles Active: ...");
-  main_layout->addWidget(vehicle_count_label_);
-
   available_spots_label_ = new QLabel("Available Spots: []");
   reserved_spots_label_ = new QLabel("Reserved Spots: []");
   queue_label_ = new QLabel("Queue: []");
   status_label_ = new QLabel("Status: Waiting...");
 
+  avp_mode_layout_ = new QHBoxLayout;
+
+  dropoff_button_ = new QPushButton("Drop-off");
+  parking_button_ = new QPushButton("Parking");
+  retrieve_button_ = new QPushButton("Retrieve");
+
+  dropoff_button_->setCursor(Qt::PointingHandCursor);
+  parking_button_->setCursor(Qt::PointingHandCursor);
+  retrieve_button_->setCursor(Qt::PointingHandCursor);
+
+  auto setStyle = [](QPushButton *button, bool active) {
+    button->setStyleSheet(QString(
+      "QPushButton {"
+      "  padding: 4px 12px; "
+      "  border: none; "
+      "  border-radius: 10px; "
+      "  background-color: %1; "
+      "  color: white;"
+      "}"
+      "QPushButton:hover {"
+      "  background-color: #0984e3;"  // Light blue on hover
+      "}"
+      "QPushButton:pressed {"
+      "  background-color: #6c5ce7;"  // Purple on click
+      "}"
+    ).arg(active ? "#00b894" : "#636e72"));
+  };
+
+  // Default state: Drop-off active
+  setStyle(dropoff_button_, false);
+  setStyle(parking_button_, false);
+  setStyle(retrieve_button_, false);
+
   main_layout->addWidget(available_spots_label_);
   main_layout->addWidget(reserved_spots_label_);
   main_layout->addWidget(queue_label_);
   main_layout->addWidget(status_label_);
+  main_layout->addWidget(vehicle_count_label_);
 
-  // Buttons
-  head_to_dropoff_button_ = new QPushButton("Head to Drop-Off");
-  start_avp_button_ = new QPushButton("Start AVP");
-  retrieve_button_ = new QPushButton("Retrieve Vehicle");
+  avp_mode_layout_->addWidget(dropoff_button_);
+  avp_mode_layout_->addWidget(parking_button_);
+  avp_mode_layout_->addWidget(retrieve_button_);
+  main_layout->addLayout(avp_mode_layout_);
 
-  // Create horizontal layout for buttons
-  auto *button_layout = new QHBoxLayout;
-  button_layout->addWidget(head_to_dropoff_button_);
-  button_layout->addWidget(start_avp_button_);
-  button_layout->addWidget(retrieve_button_);
-
-  // Add button layout to main layout
-  main_layout->addLayout(button_layout);
 
   // Connect buttons to slots
-  connect(head_to_dropoff_button_, &QPushButton::clicked, this, &AVPPanel::onHeadToDropOffClicked);
-  connect(start_avp_button_, &QPushButton::clicked, this, &AVPPanel::onStartAVPClicked);
+  connect(dropoff_button_, &QPushButton::clicked, this, &AVPPanel::onHeadToDropOffClicked);
+  connect(parking_button_, &QPushButton::clicked, this, &AVPPanel::onStartAVPClicked);
   connect(retrieve_button_, &QPushButton::clicked, this, &AVPPanel::onRetrieveClicked);
 
   setLayout(main_layout);
