@@ -3,6 +3,9 @@
 #include <pluginlib/class_list_macros.hpp>
 #include <QTimer>
 #include <std_msgs/msg/int32.hpp>
+#include <QGroupBox>
+#include <QFormLayout>
+#include <QSpacerItem>
 
 using std::placeholders::_1;
 
@@ -21,11 +24,33 @@ void AVPPanel::setupUI()
 
   auto *main_layout = new QVBoxLayout;
 
-  vehicle_count_label_ = new QLabel("Vehicles Active: ...");
-  available_spots_label_ = new QLabel("Available Spots: []");
-  reserved_spots_label_ = new QLabel("Reserved Spots: []");
-  queue_label_ = new QLabel("Queue: []");
-  status_label_ = new QLabel("Status: Waiting...");
+  // === Vehicle Info Group ===
+  auto *vehicle_info_group = new QGroupBox("Vehicle Info");
+  auto *vehicle_info_layout = new QFormLayout;
+  vehicle_count_label_ = new QLabel("...");
+  queue_label_ = new QLabel("...");
+  vehicle_info_layout->addRow("<b>Vehicles Active:<b>", vehicle_count_label_);
+  vehicle_info_layout->addRow("<b>Queue:<b>", queue_label_);
+  vehicle_info_group->setLayout(vehicle_info_layout);
+  main_layout->addWidget(vehicle_info_group);
+
+  // === Parking Info Group ===
+  auto *parking_info_group = new QGroupBox("Parking Info");
+  auto *parking_info_layout = new QFormLayout;
+  available_spots_label_ = new QLabel("[]");
+  reserved_spots_label_ = new QLabel("[]");
+  parking_info_layout->addRow("<b>Available Spots:<b>", available_spots_label_);
+  parking_info_layout->addRow("<b>Reserved Spots:<b>", reserved_spots_label_);
+  parking_info_group->setLayout(parking_info_layout);
+  main_layout->addWidget(parking_info_group);
+
+  // === Status Group ===
+  auto *status_group = new QGroupBox("System Status");
+  auto *status_layout = new QFormLayout;
+  status_label_ = new QLabel("<b>Waiting...<b>");
+  status_layout->addRow("<b>Status:<b>", status_label_);
+  status_group->setLayout(status_layout);
+  main_layout->addWidget(status_group);
 
   avp_mode_layout_ = new QHBoxLayout;
 
@@ -55,16 +80,16 @@ void AVPPanel::setupUI()
     ).arg(active ? "#00b894" : "#636e72"));
   };
 
+  available_spots_label_->setTextFormat(Qt::RichText);
+  reserved_spots_label_->setTextFormat(Qt::RichText);
+  queue_label_->setTextFormat(Qt::RichText);
+  status_label_->setTextFormat(Qt::RichText);
+  vehicle_count_label_->setTextFormat(Qt::RichText);
+
   // Default state: Drop-off active
   setStyle(dropoff_button_, false);
   setStyle(parking_button_, false);
   setStyle(retrieve_button_, false);
-
-  main_layout->addWidget(available_spots_label_);
-  main_layout->addWidget(reserved_spots_label_);
-  main_layout->addWidget(queue_label_);
-  main_layout->addWidget(status_label_);
-  main_layout->addWidget(vehicle_count_label_);
 
   avp_mode_layout_->addWidget(dropoff_button_);
   avp_mode_layout_->addWidget(parking_button_);
@@ -91,7 +116,7 @@ void AVPPanel::createROSInterfaces()
       std::string raw = msg->data;
       std::string::size_type colon = raw.rfind(':');
       std::string just_spots = (colon != std::string::npos) ? raw.substr(colon + 1) : raw;
-      QString text = QString::fromStdString("Available Spots: " + just_spots);
+      QString text = QString::fromStdString("<b>" + just_spots + "</b>");
       QMetaObject::invokeMethod(this, [this, text]() {
         available_spots_label_->setText(text);
       }, Qt::QueuedConnection);
@@ -103,34 +128,34 @@ void AVPPanel::createROSInterfaces()
       std::string raw = msg->data;
       std::string::size_type colon = raw.rfind(':');
       std::string just_spots = (colon != std::string::npos) ? raw.substr(colon + 1) : raw;
-      QString text = QString::fromStdString("Reserved Spots: " + just_spots);
+      QString text = QString::fromStdString("<b>" + just_spots + "</b>");
       QMetaObject::invokeMethod(this, [this, text]() {
         reserved_spots_label_->setText(text);
       }, Qt::QueuedConnection);
     });
+
   queue_sub_ = node_->create_subscription<std_msgs::msg::String>(
     "/avp/queue", 10,
     [this](const std_msgs::msg::String::SharedPtr msg) {
       std::string raw = msg->data;
       std::string cleaned = raw;
 
-      // Remove known prefix if present
       const std::string prefix = "Drop-off Queue: ";
       std::size_t pos = raw.find(prefix);
       if (pos != std::string::npos) {
         cleaned = raw.substr(pos + prefix.length());
       }
 
-      QString text = QString::fromStdString(cleaned);
+      QString text = QString::fromStdString("<b>" + cleaned + "</b>");
       QMetaObject::invokeMethod(this, [this, text]() {
-        queue_label_->setText("Queue: " + text);
+        queue_label_->setText(text);
       }, Qt::QueuedConnection);
     });
 
   status_sub_ = node_->create_subscription<std_msgs::msg::String>(
     "/avp/status", 10,
     [this](const std_msgs::msg::String::SharedPtr msg) {
-      QString text = QString::fromStdString("Status: " + msg->data);
+      QString text = QString::fromStdString("<b>" + msg->data + "</b>");
       QMetaObject::invokeMethod(this, [this, text]() {
         status_label_->setText(text);
       }, Qt::QueuedConnection);
@@ -139,13 +164,11 @@ void AVPPanel::createROSInterfaces()
   vehicle_count_sub_ = node_->create_subscription<std_msgs::msg::Int32>(
     "/avp/vehicle_count", 10,
     [this](const std_msgs::msg::Int32::SharedPtr msg) {
-      QString text = QString("Vehicles Active: %1").arg(msg->data);
+      QString text = QString("<b>%1</b>").arg(msg->data);
       QMetaObject::invokeMethod(this, [this, text]() {
         vehicle_count_label_->setText(text);
       }, Qt::QueuedConnection);
-    }
-  );
-
+    });
 
   executor_ = std::make_shared<rclcpp::executors::SingleThreadedExecutor>();
   executor_->add_node(node_);
