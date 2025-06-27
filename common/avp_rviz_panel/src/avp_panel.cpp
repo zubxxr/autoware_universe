@@ -65,19 +65,24 @@ void AVPPanel::setupUI()
   auto setStyle = [](QPushButton *button, bool active) {
     button->setStyleSheet(QString(
       "QPushButton {"
-      "  padding: 4px 12px; "
-      "  border: none; "
-      "  border-radius: 10px; "
-      "  background-color: %1; "
+      "  padding: 4px 12px;"
+      "  border: none;"
+      "  border-radius: 10px;"
+      "  background-color: %1;"
       "  color: white;"
       "}"
-      "QPushButton:hover {"
-      "  background-color: #0984e3;"  // Light blue on hover
+      "QPushButton:disabled {"
+      "  background-color:rgb(12, 13, 14);"     // much darker gray
+      "  color: #666;"                   // faded grey text
+      "  opacity: 0.4;"                  // further fade the whole thing
       "}"
-      "QPushButton:pressed {"
-      "  background-color: #6c5ce7;"  // Purple on click
+      "QPushButton:hover:!disabled {"
+      "  background-color:rgb(101, 110, 116);"     // on hover
       "}"
-    ).arg(active ? "#00b894" : "#636e72"));
+      "QPushButton:pressed:!disabled {"
+      "  background-color: #74b9ff;"     // lighter blue on press
+      "}"
+    ).arg(active ? "#0984e3" : "#3b3f47"));  // active = blue, inactive = slate grey
   };
 
   available_spots_label_->setTextFormat(Qt::RichText);
@@ -155,11 +160,34 @@ void AVPPanel::createROSInterfaces()
   status_sub_ = node_->create_subscription<std_msgs::msg::String>(
     "/avp/status", 10,
     [this](const std_msgs::msg::String::SharedPtr msg) {
-      QString text = QString::fromStdString("<b>" + msg->data + "</b>");
-      QMetaObject::invokeMethod(this, [this, text]() {
-        status_label_->setText(text);
+      const std::string status_raw = msg->data;
+      QString status_text = QString::fromStdString("<b>" + status_raw + "</b>");
+
+      QMetaObject::invokeMethod(this, [this, status_text, status_raw]() {
+        status_label_->setText(status_text);
+      
+        // Logic to enable/disable buttons based on status
+        if (status_raw == "Arrived at location.") {
+          dropoff_button_->setEnabled(true);
+          parking_button_->setEnabled(false);
+          retrieve_button_->setEnabled(false);
+        } else if (status_raw == "On standby...") {
+          dropoff_button_->setEnabled(false);
+          parking_button_->setEnabled(true);
+          retrieve_button_->setEnabled(false);
+        } else if (status_raw == "Car has been parked.") {
+          dropoff_button_->setEnabled(false);
+          parking_button_->setEnabled(false);
+          retrieve_button_->setEnabled(true);
+          // TO DO 
+        } else if (status_raw == "Retrieved.") {
+          dropoff_button_->setEnabled(false);
+          parking_button_->setEnabled(false);
+          retrieve_button_->setEnabled(false);
+        }
       }, Qt::QueuedConnection);
     });
+
 
   vehicle_count_sub_ = node_->create_subscription<std_msgs::msg::Int32>(
     "/avp/vehicle_count", 10,
@@ -182,6 +210,9 @@ void AVPPanel::onHeadToDropOffClicked()
   std_msgs::msg::String msg;
   msg.data = "head_to_dropoff";
   command_pub_->publish(msg);
+  
+  dropoff_button_->setEnabled(false);
+
 }
 
 void AVPPanel::onStartAVPClicked()
@@ -189,6 +220,8 @@ void AVPPanel::onStartAVPClicked()
   std_msgs::msg::String msg;
   msg.data = "start_avp";
   command_pub_->publish(msg);
+
+  parking_button_->setEnabled(false);
 }
 
 void AVPPanel::onRetrieveClicked()
@@ -196,6 +229,9 @@ void AVPPanel::onRetrieveClicked()
   std_msgs::msg::String msg;
   msg.data = "retrieve";
   command_pub_->publish(msg);
+
+  retrieve_button_->setEnabled(false);
+
 }
 
 }  // namespace avp_rviz_panel
