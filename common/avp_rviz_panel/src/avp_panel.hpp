@@ -7,7 +7,9 @@
 #include <std_msgs/msg/string.hpp>
 #include <rviz_common/panel.hpp>
 #include <std_msgs/msg/int32.hpp>
-
+#include <QGroupBox>
+#include <QFormLayout>
+#include <QSpacerItem>
 
 namespace avp_rviz_panel
 {
@@ -41,10 +43,14 @@ private:
   QPushButton *retrieve_button_;
   QHBoxLayout *avp_mode_layout_;
 
-  // // UI buttons
-  // QPushButton *head_to_dropoff_button_;
-  // QPushButton *start_avp_button_;
-  // QPushButton *retrieve_button_;
+  // Grouped layout elements
+  QGroupBox *vehicle_info_group_;
+  QGroupBox *parking_info_group_;
+  QGroupBox *status_group_;
+
+  QFormLayout *vehicle_info_layout_;
+  QFormLayout *parking_info_layout_;
+  QFormLayout *status_layout_;
 
   // ROS node and interfaces
   rclcpp::Node::SharedPtr node_;
