@@ -26,6 +26,11 @@ target_link_libraries(${PROJECT_NAME}
   ${QT_LIBRARIES}
 )
 
+target_include_directories(${PROJECT_NAME}
+  PUBLIC
+    include
+)
+
 # Export to RViz
 pluginlib_export_plugin_description_file(rviz_common plugins/plugin_description.xml)
 
@@ -33,5 +38,9 @@ pluginlib_export_plugin_description_file(rviz_common plugins/plugin_description.
 ament_auto_package(
   INSTALL_TO_SHARE
   plugins
+)
+
+install(FILES plugins/plugin_description.xml
+  DESTINATION share/${PROJECT_NAME}
 )
 

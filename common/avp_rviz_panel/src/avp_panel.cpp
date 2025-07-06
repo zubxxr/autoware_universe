@@ -6,6 +6,7 @@
 #include <QGroupBox>
 #include <QFormLayout>
 #include <QSpacerItem>
+#include "nlohmann/json.hpp"
 
 using std::placeholders::_1;
 
@@ -27,8 +28,10 @@ void AVPPanel::setupUI()
   // === Vehicle Info Group ===
   auto *vehicle_info_group = new QGroupBox("Vehicle Info");
   auto *vehicle_info_layout = new QFormLayout;
+  vehicle_id_label_ = new QLabel("...");
   vehicle_count_label_ = new QLabel("...");
   queue_label_ = new QLabel("...");
+  vehicle_info_layout->addRow("<b>Vehicle ID:<b>", vehicle_id_label_);
   vehicle_info_layout->addRow("<b>Vehicles Active:<b>", vehicle_count_label_);
   vehicle_info_layout->addRow("<b>Queue:<b>", queue_label_);
   vehicle_info_group->setLayout(vehicle_info_layout);
@@ -51,6 +54,16 @@ void AVPPanel::setupUI()
   status_layout->addRow("<b>Status:<b>", status_label_);
   status_group->setLayout(status_layout);
   main_layout->addWidget(status_group);
+
+  // === Other Vehicles Status Group ===
+  auto *other_status_group = new QGroupBox("Vehicle Statuses");
+  auto *other_status_layout = new QVBoxLayout;
+  other_status_label_ = new QLabel("<b>Loading...</b>");
+  other_status_label_->setTextFormat(Qt::RichText);
+  other_status_layout->addWidget(other_status_label_);
+  other_status_group->setLayout(other_status_layout);
+  main_layout->addWidget(other_status_group);
+
 
   avp_mode_layout_ = new QHBoxLayout;
 
@@ -114,6 +127,17 @@ void AVPPanel::createROSInterfaces()
 {
   node_ = rclcpp::Node::make_shared("avp_panel_node");
   command_pub_ = node_->create_publisher<std_msgs::msg::String>("/avp/command", 10);
+
+  vehicle_id_sub_ = node_->create_subscription<std_msgs::msg::String>(
+    "/avp/vehicle_id", 10,
+    [this](const std_msgs::msg::String::SharedPtr msg) {
+      current_vehicle_id_ = msg->data;  // <-- store the ID
+
+      QString text = QString("<b>%1</b>").arg(QString::fromStdString(msg->data));
+      QMetaObject::invokeMethod(this, [this, text]() {
+        vehicle_id_label_->setText(text);
+      }, Qt::QueuedConnection);
+    });
 
   available_spots_sub_ = node_->create_subscription<std_msgs::msg::String>(
     "/avp/parking_spots", 10,
@@ -188,7 +212,7 @@ void AVPPanel::createROSInterfaces()
       }, Qt::QueuedConnection);
     });
 
-
+    
   vehicle_count_sub_ = node_->create_subscription<std_msgs::msg::Int32>(
     "/avp/vehicle_count", 10,
     [this](const std_msgs::msg::Int32::SharedPtr msg) {
@@ -197,6 +221,32 @@ void AVPPanel::createROSInterfaces()
         vehicle_count_label_->setText(text);
       }, Qt::QueuedConnection);
     });
+
+  other_status_sub_ = node_->create_subscription<std_msgs::msg::String>(
+    "/avp/status/all", 10,
+    [this](const std_msgs::msg::String::SharedPtr msg) {
+      std::string raw = msg->data;
+
+      QString display_text = "<b>";
+      try {
+        auto parsed = nlohmann::json::parse(raw);
+        for (auto it = parsed.begin(); it != parsed.end(); ++it) {
+          if (it.key() != current_vehicle_id_) {
+            display_text += QString("%1: %2<br>")
+                              .arg(QString::fromStdString(it.key()))
+                              .arg(QString::fromStdString(it.value().get<std::string>()));
+          }
+        }
+      } catch (...) {
+        display_text += QString::fromStdString(raw);  // fallback to raw
+      }
+      display_text += "</b>";
+
+      QMetaObject::invokeMethod(this, [this, display_text]() {
+        other_status_label_->setText(display_text);
+      }, Qt::QueuedConnection);
+    });
+
 
   executor_ = std::make_shared<rclcpp::executors::SingleThreadedExecutor>();
   executor_->add_node(node_);
