@@ -199,11 +199,16 @@ void AVPPanel::createROSInterfaces()
           dropoff_button_->setEnabled(false);
           parking_button_->setEnabled(true);
           retrieve_button_->setEnabled(false);
-        } else if (status_raw == "Car has been parked.") {
+        } 
+        else if (status_raw == "Autonomous valet parking started...") {
+          dropoff_button_->setEnabled(false);
+          parking_button_->setEnabled(false);
+          retrieve_button_->setEnabled(false);
+        }
+        else if (status_raw == "Car has been parked.") {
           dropoff_button_->setEnabled(false);
           parking_button_->setEnabled(false);
           retrieve_button_->setEnabled(true);
-          // TO DO 
         } else if (status_raw == "Retrieved.") {
           dropoff_button_->setEnabled(false);
           parking_button_->setEnabled(false);
