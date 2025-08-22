@@ -1,5 +1,5 @@
-// avp_panel.cpp
-#include "avp_panel.hpp"
+// multi_avp_status_panel.cpp
+#include "multi_avp_status_panel.hpp"
 #include <pluginlib/class_list_macros.hpp>
 #include <QTimer>
 #include <std_msgs/msg/int32.hpp>
@@ -10,17 +10,17 @@
 
 using std::placeholders::_1;
 
-namespace avp_rviz_panel
+namespace multi_avp_status_panel
 {
-AVPPanel::AVPPanel(QWidget *parent) : rviz_common::Panel(parent)
+MultiAVPStatusPanel::MultiAVPStatusPanel(QWidget *parent) : rviz_common::Panel(parent)
 {
   setupUI();
   createROSInterfaces();
 }
 
-void AVPPanel::onInitialize() {}
+void MultiAVPStatusPanel::onInitialize() {}
 
-void AVPPanel::setupUI()
+void MultiAVPStatusPanel::setupUI()
 {
 
   auto *main_layout = new QVBoxLayout;
@@ -116,14 +116,14 @@ void AVPPanel::setupUI()
 
 
   // Connect buttons to slots
-  connect(dropoff_button_, &QPushButton::clicked, this, &AVPPanel::onHeadToDropOffClicked);
-  connect(parking_button_, &QPushButton::clicked, this, &AVPPanel::onStartAVPClicked);
-  connect(retrieve_button_, &QPushButton::clicked, this, &AVPPanel::onRetrieveClicked);
+  connect(dropoff_button_, &QPushButton::clicked, this, &MultiAVPStatusPanel::onHeadToDropOffClicked);
+  connect(parking_button_, &QPushButton::clicked, this, &MultiAVPStatusPanel::onStartAVPClicked);
+  connect(retrieve_button_, &QPushButton::clicked, this, &MultiAVPStatusPanel::onRetrieveClicked);
 
   setLayout(main_layout);
 }
 
-void AVPPanel::createROSInterfaces()
+void MultiAVPStatusPanel::createROSInterfaces()
 {
   node_ = rclcpp::Node::make_shared("avp_panel_node");
   command_pub_ = node_->create_publisher<std_msgs::msg::String>("/avp/command", 10);
@@ -260,7 +260,7 @@ void AVPPanel::createROSInterfaces()
   }).detach();
 }
 
-void AVPPanel::onHeadToDropOffClicked()
+void MultiAVPStatusPanel::onHeadToDropOffClicked()
 {
   std_msgs::msg::String msg;
   msg.data = "head_to_dropoff";
@@ -270,7 +270,7 @@ void AVPPanel::onHeadToDropOffClicked()
 
 }
 
-void AVPPanel::onStartAVPClicked()
+void MultiAVPStatusPanel::onStartAVPClicked()
 {
   std_msgs::msg::String msg;
   msg.data = "start_avp";
@@ -279,7 +279,7 @@ void AVPPanel::onStartAVPClicked()
   parking_button_->setEnabled(false);
 }
 
-void AVPPanel::onRetrieveClicked()
+void MultiAVPStatusPanel::onRetrieveClicked()
 {
   std_msgs::msg::String msg;
   msg.data = "retrieve";
@@ -289,6 +289,6 @@ void AVPPanel::onRetrieveClicked()
 
 }
 
-}  // namespace avp_rviz_panel
+}  // namespace multi_avp_status_panel
 
-PLUGINLIB_EXPORT_CLASS(avp_rviz_panel::AVPPanel, rviz_common::Panel)
+PLUGINLIB_EXPORT_CLASS(multi_avp_status_panel::MultiAVPStatusPanel, rviz_common::Panel)

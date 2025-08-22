@@ -1,8 +1,7 @@
-<library path="avp_rviz_panel">
-  <class name="AVPPanel"
-         type="avp_rviz_panel::AVPPanel"
+<library path="avp_status_panel">
+  <class name="AVPStatusPanel"
+         type="avp_status_panel::AVPStatusPanel"
          base_class_type="rviz_common::Panel">
     <description>Autonomous Valet Parking Panel</description>
   </class>
 </library>
-

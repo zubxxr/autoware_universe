@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.14)
-project(avp_rviz_panel)
+project(multi_avp_status_panel)
 
 find_package(autoware_cmake REQUIRED)
 autoware_package()
@@ -14,11 +14,11 @@ add_definitions(-DQT_NO_KEYWORDS)
 
 # Declare the plugin source and headers
 set(HEADERS
-  src/avp_panel.hpp
+  src/multi_avp_status_panel.hpp
 )
 
 ament_auto_add_library(${PROJECT_NAME} SHARED
-  src/avp_panel.cpp
+  src/multi_avp_status_panel.cpp
   ${HEADERS}
 )
 

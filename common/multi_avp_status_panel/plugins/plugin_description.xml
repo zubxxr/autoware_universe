@@ -1,0 +1,7 @@
+<library path="multi_avp_status_panel">
+  <class name="MultiAVPStatusPanel"
+         type="multi_avp_status_panel::MultiAVPStatusPanel"
+         base_class_type="rviz_common::Panel">
+    <description>Multi-Vehicle Autonomous Valet Parking Panel</description>
+  </class>
+</library>
